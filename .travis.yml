@@ -1,0 +1,43 @@
+language: go
+matrix:
+  include:
+  - os: linux
+    dist: xenial
+    sudo: required
+    go: 1.6
+  - os: osx
+    go: 1.6
+install:
+- |
+  if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+    sudo apt-get update
+    sudo apt-get install -y -q --no-install-recommends libhttp-parser-dev libssh2-1-dev
+    wget https://launchpad.net/ubuntu/+archive/primary/+files/libgit2-24_0.24.1-2_amd64.deb
+    wget https://launchpad.net/ubuntu/+archive/primary/+files/libgit2-dev_0.24.1-2_amd64.deb
+    sudo dpkg -i libgit2-24_0.24.1-2_amd64.deb libgit2-dev_0.24.1-2_amd64.deb
+  fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew update && brew install libgit2;
+  fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then echo "$BUILD_READ_KEY" | base64 -d >
+  read_key; fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then echo "$BUILD_READ_KEY" | base64 -D > read_key;
+  fi
+- chmod 600 read_key
+- eval "$(ssh-agent -s)"
+- echo | ssh-add read_key
+- go get github.com/Masterminds/glide
+- go install github.com/Masterminds/glide
+- glide install
+- go build -v -o tagger-$TRAVIS_OS_NAME
+script:
+- go test -v
+- ls .
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key:
+    secure: Ky08VXAZZ/8pNfWGahKGHVwE6Emvyoi2Rlia9DOAyH18GOCn9JGlWZ5rw6wmS62nXcNZkoviHd3JtGeQPzCZ4pwariHY0c6+R1tYxkHLhu/bxWfkqljJHHA8BIcPVpDIONKmZ0oBFTU3YKWlanIPQbzp8RRbNY63H9IjmCdLtv7GZJ/7Mt41hWOo47MBy20sjJGdeJZWe0MDIwDPoivbAb0uMj+HpXadYU4cLKqJHnyTad5dHYM5X5IuaetCm0JHJpgqz77hM0NbOAIAHMREeP8F+bhSYFcg588nQSRxvz6m3MoPU6RoXhn9e/qjGRhVXe5eJVmWk4Tjj077uq/AaJIGWSd8tm5uckf/Yj7A9m3DVgradgulHZn2fAWZGEa7CYOxyMgTLqgPyZz9XXJTazafLi70JLmxntjhP8Ka1/zm5hWKT1Cq2xjOr5cVdmHYCEJCwRurXw5hVsAs5c6xm4N7oL2ixpgZouf+ZnwcIoh2TsipP5ZR92MGCBFvFY+y0vXn22otVrpAaSPjEicJTLJSw+8UZ3FcxCfp76Tej+xWsX3btrA15Epl9j4zc2SDs10w1E9lplDx7mo0GASRQkdnXdzeOf0V/wSB1cB8bpDgspJX2cWn4mSipyV60hm5KAqbJvtw2YZEjR73ZF/SFEXAugdI62pPWAcv5sWM7v4=
+  file: tagger-$TRAVIS_OS_NAME
+  on:
+    tags: true
+    repo: experimental-platform/release-tagger
