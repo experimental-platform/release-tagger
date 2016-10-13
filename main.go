@@ -23,7 +23,9 @@ func updateJSON(repo *buildsRepo, releaseNotesURL, tagTimestamp, isoTimestamp, t
 	newBuilds := []buildsDatum{oldBuilds[0]}
 	newBuilds[0].Build = newBuildNumber
 	newBuilds[0].PublishedAt = isoTimestamp
-	newBuilds[0].URL = releaseNotesURL
+	if releaseNotesURL != "" {
+		newBuilds[0].URL = releaseNotesURL
+	}
 
 	for k := range newBuilds[0].Images {
 		newBuilds[0].Images[k] = tagTimestamp
@@ -63,7 +65,7 @@ func main() {
 		Build     int32  `short:"b" long:"build" required:"true" description:"Specify the build number to be placed inside the JSON."`
 		SourceTag string `short:"s" long:"source-tag" default:"development" description:"Registry tag to be retagging from."`
 		TargetTag string `short:"t" long:"target-tag" default:"soul3" description:"Registry tag to be retagging to."`
-		URL       string `short:"u" long:"url" required:"true" description:"Release notes URL"`
+		URL       string `short:"u" long:"url" description:"Release notes URL"`
 	}
 
 	_, err := flags.Parse(&opts)
