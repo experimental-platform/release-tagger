@@ -11,12 +11,13 @@ import (
 )
 
 func TestPrepareRepo(t *testing.T) {
-	dir, err := prepareRepo()
+	repo, err := prepareRepo()
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(dir)
+	defer repo.Close()
 
+	dir := repo.GetDirectory()
 	info, err := os.Stat(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -47,12 +48,13 @@ func TestPrepareRepo(t *testing.T) {
 }
 
 func TestAddAndCommit(t *testing.T) {
-	dir, err := prepareRepo()
+	repo, err := prepareRepo()
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(dir)
+	defer repo.Close()
 
+	dir := repo.GetDirectory()
 	cmd1 := exec.Command("git", "-C", dir, "show-ref", "refs/heads/master")
 	out1, err := cmd1.CombinedOutput()
 	if err != nil {
@@ -66,10 +68,11 @@ func TestAddAndCommit(t *testing.T) {
 		t.Fatal(err)
 	}
 	randomData := fmt.Sprintf("%x", r)
+	filePath := fmt.Sprintf("%s/%s.json", dir, randomData)
 
-	ioutil.WriteFile(dir+"/"+randomData, []byte(randomData), 0644)
+	ioutil.WriteFile(filePath, []byte(randomData), 0644)
 
-	err = addAndCommit(dir, randomData, "foobar commit")
+	err = repo.addAndCommitChannel(randomData, "foobar commit")
 
 	cmd2 := exec.Command("git", "-C", dir, "show-ref", "refs/heads/master")
 	out2, err := cmd2.CombinedOutput()
@@ -82,10 +85,10 @@ func TestAddAndCommit(t *testing.T) {
 		t.Fatalf("Repository's master ref should have changed, remains '%s' instead", ref1)
 	}
 
-	_, err = os.Stat(dir + "/" + randomData)
+	_, err = os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			t.Fatalf("File '%s' does not exist", dir+"/"+randomData)
+			t.Fatalf("File '%s' does not exist", filePath)
 		} else {
 			t.Fatal(err)
 		}

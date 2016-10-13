@@ -1,30 +1,13 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"time"
 
 	"github.com/jessevdk/go-flags"
 )
-
-func loadImageList(jsonFilePath string) (buildsData, error) {
-	var builds buildsData
-	rawData, err := ioutil.ReadFile(jsonFilePath)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(rawData, &builds)
-	if err != nil {
-		return nil, err
-	}
-
-	return builds, nil
-}
 
 func checkIfTokensPresent() {
 	if len(os.Getenv("TOKEN_PLATFORM")) == 0 {
@@ -36,7 +19,7 @@ func checkIfTokensPresent() {
 	}
 }
 
-func updateJSON(dir, releaseNotesURL, tagTimestamp, isoTimestamp, targetChannel string, newBuildNumber int32, oldBuilds buildsData, commit bool) error {
+func updateJSON(repo *buildsRepo, releaseNotesURL, tagTimestamp, isoTimestamp, targetChannel string, newBuildNumber int32, oldBuilds buildsData, commit bool) error {
 	newBuilds := []buildsDatum{oldBuilds[0]}
 	newBuilds[0].Build = newBuildNumber
 	newBuilds[0].PublishedAt = isoTimestamp
@@ -49,32 +32,26 @@ func updateJSON(dir, releaseNotesURL, tagTimestamp, isoTimestamp, targetChannel 
 	log.Printf("Old build version: %d", oldBuilds[0].Build)
 	log.Printf("New build version: %d", newBuilds[0].Build)
 
-	data, err := json.MarshalIndent(&newBuilds, "", "  ")
+	err := repo.saveChannel(targetChannel, newBuilds)
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to save channel json: %s", err.Error())
 	}
 
 	if commit == true {
-		jsonFilePath := fmt.Sprintf("%s/%s.json", dir, targetChannel)
-		jsonFileName := fmt.Sprintf("%s.json", targetChannel)
-		err = ioutil.WriteFile(jsonFilePath, data, 0644)
-		if err != nil {
-			return err
-		}
-
 		commitMessage := fmt.Sprintf("release on channel '%s' at %s", targetChannel, isoTimestamp)
-		err := addAndCommit(dir, jsonFileName, commitMessage)
+		err := repo.addAndCommitChannel(targetChannel, commitMessage)
 		if err != nil {
 			return err
 		}
 
-		err = pushRepo(dir)
+		err = repo.push()
 		if err != nil {
 			return err
 		}
 		log.Println("Push successful")
 	} else {
-		log.Printf("New JSON:\n%s\n", string(data))
+		dump, _ := repo.dumpChannel(targetChannel)
+		log.Printf("New JSON:\n%s\n", dump)
 	}
 
 	return nil
@@ -98,17 +75,15 @@ func main() {
 	tagTimestamp := currentTime.Format("2006-01-02-1504")
 	isoTimestamp := currentTime.Format("2006-01-02T15:04:05Z")
 
-	dir, err := prepareRepo()
+	repo, err := prepareRepo()
 	if err != nil {
 		log.Fatalf("Failed to clone the builds repo: %s", err.Error())
 	}
-	log.Printf("Working in directory '%s'", dir)
-	defer os.RemoveAll(dir)
+	defer repo.Close()
 
-	jsonFilePath := fmt.Sprintf("%s/%s.json", dir, opts.SourceTag)
-	builds, err := loadImageList(jsonFilePath)
+	builds, err := repo.loadChannel(opts.SourceTag)
 	if err != nil {
-		log.Fatalf("Failed to load build data from '%s'", jsonFilePath)
+		log.Fatalf("Failed to load build data from channel '%s'", opts.SourceTag)
 	}
 
 	fmt.Printf("Tag timestamp: %s\n", tagTimestamp)
@@ -117,7 +92,7 @@ func main() {
 	if opts.Commit == true {
 		checkIfTokensPresent()
 
-		err := retagAll(builds[0].Images, opts.SourceTag, tagTimestamp)
+		err = retagAll(builds[0].Images, opts.SourceTag, tagTimestamp)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -128,7 +103,7 @@ func main() {
 		}
 	}
 
-	err = updateJSON(dir, opts.URL, tagTimestamp, isoTimestamp, opts.TargetTag, opts.Build, builds, opts.Commit)
+	err = updateJSON(repo, opts.URL, tagTimestamp, isoTimestamp, opts.TargetTag, opts.Build, builds, opts.Commit)
 	if err != nil {
 		log.Fatal(err)
 	}

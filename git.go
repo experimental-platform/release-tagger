@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"time"
 
 	"gopkg.in/libgit2/git2go.v24"
@@ -18,6 +21,11 @@ type buildsDatum struct {
 }
 
 type buildsData []buildsDatum
+
+type buildsRepo struct {
+	directory string
+	repo      *git.Repository
+}
 
 func credentialsCallback(url string, username string, allowedTypes git.CredType) (git.ErrorCode, *git.Cred) {
 	ret, cred := git.NewCredSshKeyFromAgent("git")
@@ -45,10 +53,10 @@ func certificateCheckCallback(cert *git.Certificate, valid bool, hostname string
 	return 0
 }
 
-func prepareRepo() (string, error) {
+func prepareRepo() (*buildsRepo, error) {
 	dir, err := ioutil.TempDir("", "tagger")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	RemoteCallbacks := git.RemoteCallbacks{
@@ -62,27 +70,37 @@ func prepareRepo() (string, error) {
 		FetchOptions:   fetchOptions,
 	}
 
-	_, err = git.Clone("git@github.com:protonet/builds.git", dir, cloneOptions)
+	repo, err := git.Clone("git@github.com:protonet/builds.git", dir, cloneOptions)
 	if err != nil {
 		os.RemoveAll(dir)
-		return "", err
+		return nil, err
 	}
 
-	return dir, nil
+	return &buildsRepo{directory: dir, repo: repo}, nil
 }
 
-func addAndCommit(repoDir, file, commitMessage string) error {
-	repo, err := git.OpenRepository(repoDir)
+func (br *buildsRepo) Close() {
+	if br.repo != nil {
+		br.repo = nil
+	}
+
+	if br.directory != "" {
+		os.RemoveAll(br.directory)
+		br.directory = ""
+	}
+}
+
+func (br *buildsRepo) GetDirectory() string {
+	return br.directory
+}
+
+func (br *buildsRepo) addAndCommitChannel(channelName, commitMessage string) error {
+	idx, err := br.repo.Index()
 	if err != nil {
 		return err
 	}
 
-	idx, err := repo.Index()
-	if err != nil {
-		return err
-	}
-
-	err = idx.AddByPath(file)
+	err = idx.AddByPath(fmt.Sprintf("%s.json", channelName))
 	if err != nil {
 		return err
 	}
@@ -97,17 +115,17 @@ func addAndCommit(repoDir, file, commitMessage string) error {
 		return err
 	}
 
-	tree, err := repo.LookupTree(treeID)
+	tree, err := br.repo.LookupTree(treeID)
 	if err != nil {
 		return err
 	}
 
-	branch, err := repo.LookupBranch("master", git.BranchLocal)
+	branch, err := br.repo.LookupBranch("master", git.BranchLocal)
 	if err != nil {
 		return err
 	}
 
-	commitTarget, err := repo.LookupCommit(branch.Target())
+	commitTarget, err := br.repo.LookupCommit(branch.Target())
 	if err != nil {
 		panic(err)
 	}
@@ -118,7 +136,7 @@ func addAndCommit(repoDir, file, commitMessage string) error {
 		When:  time.Now(),
 	}
 
-	_, err = repo.CreateCommit("refs/heads/master", signature, signature, commitMessage, tree, commitTarget)
+	_, err = br.repo.CreateCommit("refs/heads/master", signature, signature, commitMessage, tree, commitTarget)
 	if err != nil {
 		panic(err)
 	}
@@ -126,13 +144,8 @@ func addAndCommit(repoDir, file, commitMessage string) error {
 	return nil
 }
 
-func pushRepo(repoDir string) error {
-	repo, err := git.OpenRepository(repoDir)
-	if err != nil {
-		return err
-	}
-
-	remote, err := repo.Remotes.Lookup("origin")
+func (br *buildsRepo) push() error {
+	remote, err := br.repo.Remotes.Lookup("origin")
 	if err != nil {
 		return err
 	}
@@ -145,4 +158,52 @@ func pushRepo(repoDir string) error {
 	err = remote.Push([]string{"refs/heads/master"}, opts)
 
 	return err
+}
+
+func (br *buildsRepo) loadChannel(channelName string) (buildsData, error) {
+	fileName := fmt.Sprintf("%s.json", channelName)
+	filePath := path.Join(br.directory, fileName)
+
+	var builds buildsData
+
+	rawData, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(rawData, &builds)
+	if err != nil {
+		return nil, err
+	}
+
+	return builds, nil
+}
+
+func (br *buildsRepo) saveChannel(channelName string, data buildsData) error {
+	fileName := fmt.Sprintf("%s.json", channelName)
+	filePath := path.Join(br.directory, fileName)
+
+	rawData, err := json.MarshalIndent(&data, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(filePath, rawData, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (br *buildsRepo) dumpChannel(channelName string) (string, error) {
+	fileName := fmt.Sprintf("%s.json", channelName)
+	filePath := path.Join(br.directory, fileName)
+
+	rawData, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return "", err
+	}
+
+	return string(rawData), nil
 }
