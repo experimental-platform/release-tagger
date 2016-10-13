@@ -8,65 +8,41 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+
+	"gopkg.in/stretchr/testify.v1/assert"
 )
 
 func TestPrepareRepo(t *testing.T) {
 	repo, err := prepareRepo()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 	defer repo.Close()
 
 	dir := repo.GetDirectory()
 	info, err := os.Stat(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			t.Fatalf("Directory '%s' does not exist!", dir)
-		} else {
-			t.Fatal(err)
-		}
-	}
-
-	if !info.IsDir() {
-		t.Fatalf("'%s' is not a directory!", dir)
-	}
+	assert.Nil(t, err, "Directory '%s' does not exist!", dir)
+	assert.True(t, info.IsDir(), "'%s' is not a directory!", dir)
 
 	gitDir := dir + "/.git"
 
 	info2, err := os.Stat(gitDir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			t.Fatalf("Directory '%s' does not exist!", gitDir)
-		} else {
-			t.Fatal(err)
-		}
-	}
-
-	if !info2.IsDir() {
-		t.Fatalf("'%s' is not a directory!", gitDir)
-	}
+	assert.Nil(t, err, "Directory '%s' does not exist!", gitDir)
+	assert.True(t, info2.IsDir(), "'%s' is not a directory!", gitDir)
 }
 
 func TestAddAndCommit(t *testing.T) {
 	repo, err := prepareRepo()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 	defer repo.Close()
 
 	dir := repo.GetDirectory()
 	cmd1 := exec.Command("git", "-C", dir, "show-ref", "refs/heads/master")
 	out1, err := cmd1.CombinedOutput()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 	ref1 := strings.Split(string(out1), " ")[0]
 
 	r := make([]byte, 64)
 	_, err = rand.Read(r)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 	randomData := fmt.Sprintf("%x", r)
 	filePath := fmt.Sprintf("%s/%s.json", dir, randomData)
 
@@ -76,21 +52,11 @@ func TestAddAndCommit(t *testing.T) {
 
 	cmd2 := exec.Command("git", "-C", dir, "show-ref", "refs/heads/master")
 	out2, err := cmd2.CombinedOutput()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 	ref2 := strings.Split(string(out2), " ")[0]
 
-	if ref1 == ref2 {
-		t.Fatalf("Repository's master ref should have changed, remains '%s' instead", ref1)
-	}
+	assert.NotEqual(t, ref1, ref2, "Repository's master ref should have changed")
 
 	_, err = os.Stat(filePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			t.Fatalf("File '%s' does not exist", filePath)
-		} else {
-			t.Fatal(err)
-		}
-	}
+	assert.Nil(t, err, "File '%s' does not exist", filePath)
 }

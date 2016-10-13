@@ -8,9 +8,10 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"reflect"
 	"strings"
 	"testing"
+
+	"gopkg.in/stretchr/testify.v1/assert"
 )
 
 type RewriteTransport struct {
@@ -94,34 +95,19 @@ func TestMain(m *testing.M) {
 
 func TestGetTagImage(t *testing.T) {
 	id, err := getTagImage("skvs", "experimentalplatform", "development", "foobar token")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	expectedID := "8b8cd46eeab0b530d0fcb64de26fe62fd68e736fc627c526933b680d3ae5291f"
-
-	if id != expectedID {
-		t.Fatalf("Expected ID is '%s', got '%s'", expectedID, id)
-	}
+	assert.Nil(t, err)
+	assert.Equal(t, "8b8cd46eeab0b530d0fcb64de26fe62fd68e736fc627c526933b680d3ae5291f", id)
 }
 
 func TestGetTagImage2(t *testing.T) {
 	tag := "no-such-tag"
-	id, err := getTagImage("skvs", "experimentalplatform", tag, "foobar token")
-	if err == nil {
-		t.Fatalf("Tag '%s' should not exist, but found ID '%s'", tag, id)
-	}
-
-	if _, ok := err.(*errorQuayTagNotFound); !ok {
-		typename := reflect.TypeOf(err).Name()
-		t.Fatalf("Should have received an errorQuayTagNotFound, got a %s instead", typename)
-	}
+	_, err := getTagImage("skvs", "experimentalplatform", tag, "foobar token")
+	assert.NotNil(t, err)
+	assert.IsType(t, &errorQuayTagNotFound{}, err)
 }
 
 func TestSetTagImage(t *testing.T) {
 	tag := "foobar"
 	err := setTagImage("skvs", "experimentalplatform", tag, "8b8cd46eeab0b530d0fcb64de26fe62fd68e736fc627c526933b680d3ae5291f", "foobar token")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 }
