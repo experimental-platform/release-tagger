@@ -59,14 +59,16 @@ func updateJSON(repo *buildsRepo, releaseNotesURL, tagTimestamp, isoTimestamp, t
 	return nil
 }
 
+type taggerOptions struct {
+	Commit    bool   `short:"c" long:"commit" description:"Commit the changes. Will make a dry run without this flag."`
+	Build     int32  `short:"b" long:"build" required:"true" description:"Specify the build number to be placed inside the JSON."`
+	SourceTag string `short:"s" long:"source-tag" default:"development" description:"Registry tag to be retagging from."`
+	TargetTag string `short:"t" long:"target-tag" default:"soul3" description:"Registry tag to be retagging to."`
+	URL       string `short:"u" long:"url" description:"Release notes URL"`
+}
+
 func main() {
-	var opts struct {
-		Commit    bool   `short:"c" long:"commit" description:"Commit the changes. Will make a dry run without this flag."`
-		Build     int32  `short:"b" long:"build" required:"true" description:"Specify the build number to be placed inside the JSON."`
-		SourceTag string `short:"s" long:"source-tag" default:"development" description:"Registry tag to be retagging from."`
-		TargetTag string `short:"t" long:"target-tag" default:"soul3" description:"Registry tag to be retagging to."`
-		URL       string `short:"u" long:"url" description:"Release notes URL"`
-	}
+	var opts taggerOptions
 
 	_, err := flags.Parse(&opts)
 	if err != nil {
