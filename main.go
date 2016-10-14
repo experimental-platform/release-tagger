@@ -31,6 +31,9 @@ func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp
 	if opts.URL != "" {
 		newBuilds[0].URL = opts.URL
 	}
+	if opts.Codename != "" {
+		newBuilds[0].Codename = opts.Codename
+	}
 
 	for k := range newBuilds[0].Images {
 		newBuilds[0].Images[k] = tagTimestamp
@@ -70,6 +73,7 @@ type taggerOptions struct {
 	SourceChannel string `short:"s" long:"source-channel" default:"development" description:"Release channel to be retagging/copying from."`
 	TargetChannel string `short:"t" long:"target-channel" default:"soul3" description:"Release channel to be retagging to."`
 	URL           string `short:"u" long:"url" description:"Release notes URL"`
+	Codename      string `short:"n" long:"codename" description:"Release codename"`
 }
 
 func main() {
