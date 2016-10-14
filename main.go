@@ -20,7 +20,7 @@ func checkIfTokensPresent() {
 }
 
 func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp string) error {
-	oldBuilds, err := repo.loadChannel(opts.SourceTag)
+	oldBuilds, err := repo.loadChannel(opts.SourceChannel)
 	if err != nil {
 		return err
 	}
@@ -39,14 +39,14 @@ func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp
 	log.Printf("Old build version: %d", oldBuilds[0].Build)
 	log.Printf("New build version: %d", newBuilds[0].Build)
 
-	err = repo.saveChannel(opts.TargetTag, newBuilds)
+	err = repo.saveChannel(opts.TargetChannel, newBuilds)
 	if err != nil {
 		return fmt.Errorf("Failed to save channel json: %s", err.Error())
 	}
 
 	if opts.Commit == true {
-		commitMessage := fmt.Sprintf("release on channel '%s' at %s", opts.TargetTag, isoTimestamp)
-		err := repo.addAndCommitChannel(opts.TargetTag, commitMessage)
+		commitMessage := fmt.Sprintf("release on channel '%s' at %s", opts.TargetChannel, isoTimestamp)
+		err := repo.addAndCommitChannel(opts.TargetChannel, commitMessage)
 		if err != nil {
 			return err
 		}
@@ -57,7 +57,7 @@ func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp
 		}
 		log.Println("Push successful")
 	} else {
-		dump, _ := repo.dumpChannel(opts.TargetTag)
+		dump, _ := repo.dumpChannel(opts.TargetChannel)
 		log.Printf("New JSON:\n%s\n", dump)
 	}
 
@@ -65,11 +65,11 @@ func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp
 }
 
 type taggerOptions struct {
-	Commit    bool   `short:"c" long:"commit" description:"Commit the changes. Will make a dry run without this flag."`
-	Build     int32  `short:"b" long:"build" required:"true" description:"Specify the build number to be placed inside the JSON."`
-	SourceTag string `short:"s" long:"source-tag" default:"development" description:"Registry tag to be retagging from."`
-	TargetTag string `short:"t" long:"target-tag" default:"soul3" description:"Registry tag to be retagging to."`
-	URL       string `short:"u" long:"url" description:"Release notes URL"`
+	Commit        bool   `short:"c" long:"commit" description:"Commit the changes. Will make a dry run without this flag."`
+	Build         int32  `short:"b" long:"build" required:"true" description:"Specify the build number to be placed inside the JSON."`
+	SourceChannel string `short:"s" long:"source-channel" default:"development" description:"Release channel to be retagging/copying from."`
+	TargetChannel string `short:"t" long:"target-channel" default:"soul3" description:"Release channel to be retagging to."`
+	URL           string `short:"u" long:"url" description:"Release notes URL"`
 }
 
 func main() {
@@ -90,9 +90,9 @@ func main() {
 	}
 	defer repo.Close()
 
-	builds, err := repo.loadChannel(opts.SourceTag)
+	builds, err := repo.loadChannel(opts.SourceChannel)
 	if err != nil {
-		log.Fatalf("Failed to load build data from channel '%s'", opts.SourceTag)
+		log.Fatalf("Failed to load build data from channel '%s'", opts.SourceChannel)
 	}
 
 	fmt.Printf("Tag timestamp: %s\n", tagTimestamp)
@@ -101,12 +101,12 @@ func main() {
 	if opts.Commit == true {
 		checkIfTokensPresent()
 
-		err = retagAll(builds[0].Images, opts.SourceTag, tagTimestamp)
+		err = retagAll(builds[0].Images, opts.SourceChannel, tagTimestamp)
 		if err != nil {
 			log.Fatal(err)
 		}
 	} else {
-		log.Printf("Dry run. Would otherwise retag following images from '%s' to '%s' and update channel '%s':\n", opts.SourceTag, tagTimestamp, opts.TargetTag)
+		log.Printf("Dry run. Would otherwise retag following images from '%s' to '%s' and update channel '%s':\n", opts.SourceChannel, tagTimestamp, opts.TargetChannel)
 		for k := range builds[0].Images {
 			log.Printf(" * %s\n", k)
 		}
