@@ -19,12 +19,17 @@ func checkIfTokensPresent() {
 	}
 }
 
-func updateJSON(repo *buildsRepo, releaseNotesURL, tagTimestamp, isoTimestamp, targetChannel string, newBuildNumber int32, oldBuilds buildsData, commit bool) error {
+func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp string) error {
+	oldBuilds, err := repo.loadChannel(opts.SourceTag)
+	if err != nil {
+		return err
+	}
+
 	newBuilds := []buildsDatum{oldBuilds[0]}
-	newBuilds[0].Build = newBuildNumber
+	newBuilds[0].Build = opts.Build
 	newBuilds[0].PublishedAt = isoTimestamp
-	if releaseNotesURL != "" {
-		newBuilds[0].URL = releaseNotesURL
+	if opts.URL != "" {
+		newBuilds[0].URL = opts.URL
 	}
 
 	for k := range newBuilds[0].Images {
@@ -34,14 +39,14 @@ func updateJSON(repo *buildsRepo, releaseNotesURL, tagTimestamp, isoTimestamp, t
 	log.Printf("Old build version: %d", oldBuilds[0].Build)
 	log.Printf("New build version: %d", newBuilds[0].Build)
 
-	err := repo.saveChannel(targetChannel, newBuilds)
+	err = repo.saveChannel(opts.TargetTag, newBuilds)
 	if err != nil {
 		return fmt.Errorf("Failed to save channel json: %s", err.Error())
 	}
 
-	if commit == true {
-		commitMessage := fmt.Sprintf("release on channel '%s' at %s", targetChannel, isoTimestamp)
-		err := repo.addAndCommitChannel(targetChannel, commitMessage)
+	if opts.Commit == true {
+		commitMessage := fmt.Sprintf("release on channel '%s' at %s", opts.TargetTag, isoTimestamp)
+		err := repo.addAndCommitChannel(opts.TargetTag, commitMessage)
 		if err != nil {
 			return err
 		}
@@ -52,7 +57,7 @@ func updateJSON(repo *buildsRepo, releaseNotesURL, tagTimestamp, isoTimestamp, t
 		}
 		log.Println("Push successful")
 	} else {
-		dump, _ := repo.dumpChannel(targetChannel)
+		dump, _ := repo.dumpChannel(opts.TargetTag)
 		log.Printf("New JSON:\n%s\n", dump)
 	}
 
@@ -107,7 +112,7 @@ func main() {
 		}
 	}
 
-	err = updateJSON(repo, opts.URL, tagTimestamp, isoTimestamp, opts.TargetTag, opts.Build, builds, opts.Commit)
+	err = updateJSON(repo, opts, tagTimestamp, isoTimestamp)
 	if err != nil {
 		log.Fatal(err)
 	}
