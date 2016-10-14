@@ -60,7 +60,7 @@ func TestRenamedImages(t *testing.T) {
 
 	opts := taggerOptions{
 		Commit:        false,
-		Build:         666,
+		Build:         0,
 		SourceChannel: "source",
 		TargetChannel: "tgt",
 		URL:           "",
@@ -73,7 +73,7 @@ func TestRenamedImages(t *testing.T) {
 
 	var expectedJSON = `[
   {
-    "build": 666,
+    "build": 1,
     "codename": "Development Alpha",
     "url": "foobar",
     "published_at": "wtf_timestamp %3215123",
@@ -178,6 +178,54 @@ func TestRenamedImages2(t *testing.T) {
       "quay.io/protonetinc/soul-protosync": "tag-timestamp #124124",
       "quay.io/protonetinc/soul-smb": "tag-timestamp #124124"
     }
+  }
+]`
+
+	actualJSON, err := repo.dumpChannel("tgt")
+	assert.Nil(t, err)
+	assert.Equal(t, expectedJSON, actualJSON)
+}
+
+func TestRenamedImagesBuildIncrement(t *testing.T) {
+	repo, err := prepareRepo()
+	assert.Nil(t, err)
+	defer repo.Close()
+
+	var oldJSON1 = `[
+  {
+    "build": 213455,
+    "codename": "Development Alpha",
+    "url": "foobar",
+    "published_at": "2016-08-24T14:02:38Z",
+    "images": {}
+  }
+]`
+
+	srcJSONPath := path.Join(repo.GetDirectory(), "source.json")
+	tgtJSONPath := path.Join(repo.GetDirectory(), "tgt.json")
+	ioutil.WriteFile(srcJSONPath, []byte(oldJSON1), 0644)
+	ioutil.WriteFile(tgtJSONPath, []byte(oldJSON1), 0644)
+
+	opts := taggerOptions{
+		Commit:        false,
+		Build:         0,
+		SourceChannel: "source",
+		TargetChannel: "tgt",
+		URL:           "https://www.example.com/",
+		Codename:      "Zeitgeist",
+	}
+	tagTimestamp := "tag-timestamp #124124"
+	isoTimestamp := "wtf_timestamp %3215123"
+	err = updateJSON(repo, opts, tagTimestamp, isoTimestamp)
+	assert.Nil(t, err)
+
+	var expectedJSON = `[
+  {
+    "build": 213456,
+    "codename": "Zeitgeist",
+    "url": "https://www.example.com/",
+    "published_at": "wtf_timestamp %3215123",
+    "images": {}
   }
 ]`
 

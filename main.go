@@ -26,7 +26,19 @@ func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp
 	}
 
 	newBuilds := []buildsDatum{oldBuilds[0]}
-	newBuilds[0].Build = opts.Build
+	if opts.Build != 0 {
+		// if build number was given on commandline then set to it
+		newBuilds[0].Build = opts.Build
+	} else {
+		destBuilds, err2 := repo.loadChannel(opts.TargetChannel)
+		if err2 != nil {
+			// if targetchannel doesn't exist, set to #1
+			newBuilds[0].Build = 1
+		} else {
+			// otherwise increment
+			newBuilds[0].Build = destBuilds[0].Build + 1
+		}
+	}
 	newBuilds[0].PublishedAt = isoTimestamp
 	if opts.URL != "" {
 		newBuilds[0].URL = opts.URL
@@ -69,7 +81,7 @@ func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp
 
 type taggerOptions struct {
 	Commit        bool   `short:"c" long:"commit" description:"Commit the changes. Will make a dry run without this flag."`
-	Build         int32  `short:"b" long:"build" required:"true" description:"Specify the build number to be placed inside the JSON."`
+	Build         int32  `short:"b" long:"build" required:"false" default:"0" description:"Specify the build number to be placed inside the JSON."`
 	SourceChannel string `short:"s" long:"source-channel" default:"development" description:"Release channel to be retagging/copying from."`
 	TargetChannel string `short:"t" long:"target-channel" default:"soul3" description:"Release channel to be retagging to."`
 	URL           string `short:"u" long:"url" description:"Release notes URL"`
