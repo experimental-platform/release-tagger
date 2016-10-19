@@ -88,6 +88,24 @@ type taggerOptions struct {
 	Codename      string `short:"n" long:"codename" description:"Release codename"`
 }
 
+func retaggingStep(images map[string]string, opts *taggerOptions, tagTimestamp string) {
+	if opts.Commit == true {
+
+		checkIfTokensPresent()
+
+		err := retagAll(images, opts.SourceChannel, tagTimestamp)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	} else {
+		log.Printf("Dry run. Would otherwise retag following images from '%s' to '%s' and update channel '%s':\n", opts.SourceChannel, tagTimestamp, opts.TargetChannel)
+		for k := range images {
+			log.Printf(" * %s\n", k)
+		}
+	}
+}
+
 func parseOptions(opts *taggerOptions) {
 	parser := flags.NewParser(opts, flags.Default)
 	_, err := parser.Parse()
@@ -119,19 +137,7 @@ func main() {
 		log.Fatalf("Failed to load build data from channel '%s'", opts.SourceChannel)
 	}
 
-	if opts.Commit == true {
-		checkIfTokensPresent()
-
-		err = retagAll(builds[0].Images, opts.SourceChannel, tagTimestamp)
-		if err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		log.Printf("Dry run. Would otherwise retag following images from '%s' to '%s' and update channel '%s':\n", opts.SourceChannel, tagTimestamp, opts.TargetChannel)
-		for k := range builds[0].Images {
-			log.Printf(" * %s\n", k)
-		}
-	}
+	retaggingStep(builds[0].Images, &opts, tagTimestamp)
 
 	err = updateJSON(repo, opts, tagTimestamp, isoTimestamp)
 	if err != nil {
