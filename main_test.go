@@ -50,6 +50,8 @@ var testOldJSON = `[
   }
 ]`
 
+// TestRenamedImages tests whether the image list
+// contains the same images with altered tags
 func TestRenamedImages(t *testing.T) {
 	repo, err := prepareRepo()
 	assert.Nil(t, err)
@@ -65,6 +67,8 @@ func TestRenamedImages(t *testing.T) {
 		TargetChannel: "tgt",
 		URL:           "",
 		Codename:      "",
+		Copy:          false,
+		Retag:         true,
 	}
 	tagTimestamp := "tag-timestamp #124124"
 	isoTimestamp := "wtf_timestamp %3215123"
@@ -118,6 +122,7 @@ func TestRenamedImages(t *testing.T) {
 	assert.Equal(t, expectedJSON, actualJSON)
 }
 
+// TestRenamedImages2 tests whether the Codename and URL have been updated
 func TestRenamedImages2(t *testing.T) {
 	repo, err := prepareRepo()
 	assert.Nil(t, err)
@@ -133,6 +138,8 @@ func TestRenamedImages2(t *testing.T) {
 		TargetChannel: "tgt",
 		URL:           "https://www.example.com/",
 		Codename:      "Zeitgeist",
+		Copy:          false,
+		Retag:         true,
 	}
 	tagTimestamp := "tag-timestamp #124124"
 	isoTimestamp := "wtf_timestamp %3215123"
@@ -186,6 +193,78 @@ func TestRenamedImages2(t *testing.T) {
 	assert.Equal(t, expectedJSON, actualJSON)
 }
 
+// TestRenamedImages3 tests whether the image list
+// contains the same images with unchanged tags
+func TestRenamedImages3(t *testing.T) {
+	repo, err := prepareRepo()
+	assert.Nil(t, err)
+	defer repo.Close()
+
+	srcJSONPath := path.Join(repo.GetDirectory(), "source.json")
+	ioutil.WriteFile(srcJSONPath, []byte(testOldJSON), 0644)
+
+	opts := taggerOptions{
+		Commit:        false,
+		Build:         0,
+		SourceChannel: "source",
+		TargetChannel: "tgt",
+		URL:           "",
+		Codename:      "",
+		Copy:          true,
+		Retag:         false,
+	}
+	tagTimestamp := "tag-timestamp #124124"
+	isoTimestamp := "wtf_timestamp %3215123"
+	err = updateJSON(repo, opts, tagTimestamp, isoTimestamp)
+	assert.Nil(t, err)
+
+	var expectedJSON = `[
+  {
+    "build": 1,
+    "codename": "Development Alpha",
+    "url": "foobar",
+    "published_at": "wtf_timestamp %3215123",
+    "images": {
+      "quay.io/experimentalplatform/afpd": "2016-08-24-1402",
+      "quay.io/experimentalplatform/app-manager": "2016-08-24-1402",
+      "quay.io/experimentalplatform/central-gateway": "2016-08-24-1402",
+      "quay.io/experimentalplatform/collectd": "2016-08-24-1402",
+      "quay.io/experimentalplatform/configure": "2016-08-29-1453",
+      "quay.io/experimentalplatform/dnsmasq": "2016-08-24-1402",
+      "quay.io/experimentalplatform/dokku": "2016-08-24-1402",
+      "quay.io/experimentalplatform/elasticsearch": "2016-08-24-1402",
+      "quay.io/experimentalplatform/frontend": "2016-08-24-1402",
+      "quay.io/experimentalplatform/haproxy": "2016-08-24-1402",
+      "quay.io/experimentalplatform/hardware": "2016-08-24-1402",
+      "quay.io/experimentalplatform/hostapd": "2016-08-24-1402",
+      "quay.io/experimentalplatform/hostname-avahi": "2016-08-24-1402",
+      "quay.io/experimentalplatform/hostname-smb": "2016-08-24-1402",
+      "quay.io/experimentalplatform/http-proxy": "2016-08-24-1402",
+      "quay.io/experimentalplatform/ldap": "2016-08-24-1402",
+      "quay.io/experimentalplatform/monitoring": "2016-08-24-1402",
+      "quay.io/experimentalplatform/mysql": "2016-08-24-1402",
+      "quay.io/experimentalplatform/ptw": "2016-08-24-1402",
+      "quay.io/experimentalplatform/pulseaudio": "2016-08-24-1402",
+      "quay.io/experimentalplatform/rabbitmq": "2016-08-24-1402",
+      "quay.io/experimentalplatform/redis": "2016-08-24-1402",
+      "quay.io/experimentalplatform/skvs": "2016-08-24-1402",
+      "quay.io/experimentalplatform/smb": "2016-08-24-1402",
+      "quay.io/experimentalplatform/systemd-proxy": "2016-08-24-1402",
+      "quay.io/protonetinc/german-shepherd": "2016-08-24-1402",
+      "quay.io/protonetinc/soul-backup": "2016-08-24-1402",
+      "quay.io/protonetinc/soul-nginx": "2016-08-24-1402",
+      "quay.io/protonetinc/soul-owner": "2016-08-24-1402",
+      "quay.io/protonetinc/soul-protosync": "2016-08-24-1402",
+      "quay.io/protonetinc/soul-smb": "2016-08-24-1402"
+    }
+  }
+]`
+
+	actualJSON, err := repo.dumpChannel("tgt")
+	assert.Nil(t, err)
+	assert.Equal(t, expectedJSON, actualJSON)
+}
+
 func TestRenamedImagesBuildIncrement(t *testing.T) {
 	repo, err := prepareRepo()
 	assert.Nil(t, err)
@@ -213,6 +292,8 @@ func TestRenamedImagesBuildIncrement(t *testing.T) {
 		TargetChannel: "tgt",
 		URL:           "https://www.example.com/",
 		Codename:      "Zeitgeist",
+		Copy:          false,
+		Retag:         true,
 	}
 	tagTimestamp := "tag-timestamp #124124"
 	isoTimestamp := "wtf_timestamp %3215123"

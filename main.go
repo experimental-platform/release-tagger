@@ -47,8 +47,10 @@ func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp
 		newBuilds[0].Codename = opts.Codename
 	}
 
-	for k := range newBuilds[0].Images {
-		newBuilds[0].Images[k] = tagTimestamp
+	if opts.Retag {
+		for k := range newBuilds[0].Images {
+			newBuilds[0].Images[k] = tagTimestamp
+		}
 	}
 
 	log.Printf("Old build version: %d", oldBuilds[0].Build)
@@ -86,6 +88,8 @@ type taggerOptions struct {
 	TargetChannel string `short:"t" long:"target-channel" default:"soul3" description:"Release channel to be retagging to."`
 	URL           string `short:"u" long:"url" description:"Release notes URL"`
 	Codename      string `short:"n" long:"codename" description:"Release codename"`
+	Copy          bool   `long:"copy" description:"Copy from one release channel to another"`
+	Retag         bool   `long:"retag" description:"Retag the source channel's images with a timestamp (e.g. for tagging from 'development')"`
 }
 
 func retaggingStep(images map[string]string, opts *taggerOptions, tagTimestamp string) {
@@ -113,6 +117,18 @@ func parseOptions(opts *taggerOptions) {
 		parser.WriteHelp(os.Stderr)
 		os.Exit(1)
 	}
+
+	if opts.Copy && opts.Retag {
+		fmt.Fprintln(os.Stderr, "--copy and --retag are mutually exclusive.")
+		parser.WriteHelp(os.Stderr)
+		os.Exit(1)
+	}
+
+	if !opts.Copy && !opts.Retag {
+		fmt.Fprintln(os.Stderr, "You must select either --copy or --retag option.")
+		parser.WriteHelp(os.Stderr)
+		os.Exit(1)
+	}
 }
 
 func main() {
@@ -137,7 +153,10 @@ func main() {
 		log.Fatalf("Failed to load build data from channel '%s'", opts.SourceChannel)
 	}
 
-	retaggingStep(builds[0].Images, &opts, tagTimestamp)
+	// skip this step if merely copying a channel over
+	if opts.Retag {
+		retaggingStep(builds[0].Images, &opts, tagTimestamp)
+	}
 
 	err = updateJSON(repo, opts, tagTimestamp, isoTimestamp)
 	if err != nil {
