@@ -88,17 +88,25 @@ type taggerOptions struct {
 	Codename      string `short:"n" long:"codename" description:"Release codename"`
 }
 
+func parseOptions(opts *taggerOptions) {
+	parser := flags.NewParser(opts, flags.Default)
+	_, err := parser.Parse()
+	if err != nil {
+		parser.WriteHelp(os.Stderr)
+		os.Exit(1)
+	}
+}
+
 func main() {
 	var opts taggerOptions
 
-	_, err := flags.Parse(&opts)
-	if err != nil {
-		os.Exit(1)
-	}
+	parseOptions(&opts)
 
 	currentTime := time.Now().UTC()
 	tagTimestamp := currentTime.Format("2006-01-02-1504")
 	isoTimestamp := currentTime.Format("2006-01-02T15:04:05Z")
+	fmt.Printf("Tag timestamp: %s\n", tagTimestamp)
+	fmt.Printf("ISO timestamp: %s\n", isoTimestamp)
 
 	repo, err := prepareRepo()
 	if err != nil {
@@ -110,9 +118,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to load build data from channel '%s'", opts.SourceChannel)
 	}
-
-	fmt.Printf("Tag timestamp: %s\n", tagTimestamp)
-	fmt.Printf("ISO timestamp: %s\n", isoTimestamp)
 
 	if opts.Commit == true {
 		checkIfTokensPresent()
