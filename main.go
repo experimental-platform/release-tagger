@@ -20,7 +20,23 @@ func checkIfTokensPresent() {
 }
 
 func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp string) error {
-	oldBuilds, err := repo.loadChannel(opts.SourceChannel)
+	var (
+		Retag bool
+	)
+
+	switch opts.Args.Action {
+	case "copy":
+		break
+	case "retag":
+		Retag = true
+		break
+	default:
+		fmt.Fprintf(os.Stderr, "The only allowed actions are 'copy' and 'retag'\n")
+		os.Exit(1)
+		break
+	}
+
+	oldBuilds, err := repo.loadChannel(opts.Args.SourceChannel)
 	if err != nil {
 		return err
 	}
@@ -30,7 +46,7 @@ func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp
 		// if build number was given on commandline then set to it
 		newBuilds[0].Build = opts.Build
 	} else {
-		destBuilds, err2 := repo.loadChannel(opts.TargetChannel)
+		destBuilds, err2 := repo.loadChannel(opts.Args.TargetChannel)
 		if err2 != nil {
 			// if targetchannel doesn't exist, set to #1
 			newBuilds[0].Build = 1
@@ -47,7 +63,7 @@ func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp
 		newBuilds[0].Codename = opts.Codename
 	}
 
-	if opts.Retag {
+	if Retag {
 		for k := range newBuilds[0].Images {
 			newBuilds[0].Images[k] = tagTimestamp
 		}
@@ -56,14 +72,14 @@ func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp
 	log.Printf("Old build version: %d", oldBuilds[0].Build)
 	log.Printf("New build version: %d", newBuilds[0].Build)
 
-	err = repo.saveChannel(opts.TargetChannel, newBuilds)
+	err = repo.saveChannel(opts.Args.TargetChannel, newBuilds)
 	if err != nil {
 		return fmt.Errorf("Failed to save channel json: %s", err.Error())
 	}
 
 	if opts.Commit == true {
-		commitMessage := fmt.Sprintf("release on channel '%s' at %s", opts.TargetChannel, isoTimestamp)
-		err := repo.addAndCommitChannel(opts.TargetChannel, commitMessage)
+		commitMessage := fmt.Sprintf("release on channel '%s' at %s", opts.Args.TargetChannel, isoTimestamp)
+		err := repo.addAndCommitChannel(opts.Args.TargetChannel, commitMessage)
 		if err != nil {
 			return err
 		}
@@ -74,22 +90,26 @@ func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp
 		}
 		log.Println("Push successful")
 	} else {
-		dump, _ := repo.dumpChannel(opts.TargetChannel)
+		dump, _ := repo.dumpChannel(opts.Args.TargetChannel)
 		log.Printf("New JSON:\n%s\n", dump)
 	}
 
 	return nil
 }
 
+type taggerOptionsArgs struct {
+	Action        string `description:"either 'copy' or 'retag'"`
+	SourceChannel string `description:"Release channel to be retagging/copying from."`
+	TargetChannel string `description:"Release channel to be retagging to."`
+}
+
 type taggerOptions struct {
-	Commit        bool   `short:"c" long:"commit" description:"Commit the changes. Will make a dry run without this flag."`
-	Build         int32  `short:"b" long:"build" required:"false" default:"0" description:"Specify the build number to be placed inside the JSON."`
-	SourceChannel string `short:"s" long:"source-channel" default:"development" description:"Release channel to be retagging/copying from."`
-	TargetChannel string `short:"t" long:"target-channel" default:"soul3" description:"Release channel to be retagging to."`
-	URL           string `short:"u" long:"url" description:"Release notes URL"`
-	Codename      string `short:"n" long:"codename" description:"Release codename"`
-	Copy          bool   `long:"copy" description:"Copy from one release channel to another"`
-	Retag         bool   `long:"retag" description:"Retag the source channel's images with a timestamp (e.g. for tagging from 'development')"`
+	Args taggerOptionsArgs `positional-args:"true" required:"true"`
+
+	Commit   bool   `short:"c" long:"commit" description:"Commit the changes. Will make a dry run without this flag."`
+	Build    int32  `short:"b" long:"build" required:"false" default:"0" description:"Specify the build number to be placed inside the JSON."`
+	URL      string `short:"u" long:"url" description:"Release notes URL"`
+	Codename string `short:"n" long:"codename" description:"Release codename"`
 }
 
 func retaggingStep(images map[string]string, opts *taggerOptions, tagTimestamp string) {
@@ -97,13 +117,13 @@ func retaggingStep(images map[string]string, opts *taggerOptions, tagTimestamp s
 
 		checkIfTokensPresent()
 
-		err := retagAll(images, opts.SourceChannel, tagTimestamp)
+		err := retagAll(images, opts.Args.SourceChannel, tagTimestamp)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 	} else {
-		log.Printf("Dry run. Would otherwise retag following images from '%s' to '%s' and update channel '%s':\n", opts.SourceChannel, tagTimestamp, opts.TargetChannel)
+		log.Printf("Dry run. Would otherwise retag following images from '%s' to '%s' and update channel '%s':\n", opts.Args.SourceChannel, tagTimestamp, opts.Args.TargetChannel)
 		for k := range images {
 			log.Printf(" * %s\n", k)
 		}
@@ -113,20 +133,12 @@ func retaggingStep(images map[string]string, opts *taggerOptions, tagTimestamp s
 func parseOptions(opts *taggerOptions) {
 	parser := flags.NewParser(opts, flags.Default)
 	_, err := parser.Parse()
+
 	if err != nil {
-		parser.WriteHelp(os.Stderr)
-		os.Exit(1)
-	}
-
-	if opts.Copy && opts.Retag {
-		fmt.Fprintln(os.Stderr, "--copy and --retag are mutually exclusive.")
-		parser.WriteHelp(os.Stderr)
-		os.Exit(1)
-	}
-
-	if !opts.Copy && !opts.Retag {
-		fmt.Fprintln(os.Stderr, "You must select either --copy or --retag option.")
-		parser.WriteHelp(os.Stderr)
+		// this condition prevents the help from being printed twice when specifically requested by the -h|--help parameter
+		if flagserr, ok := err.(*flags.Error); !ok || flagserr.Type != flags.ErrHelp {
+			parser.WriteHelp(os.Stdout)
+		}
 		os.Exit(1)
 	}
 }
@@ -148,13 +160,13 @@ func main() {
 	}
 	defer repo.Close()
 
-	builds, err := repo.loadChannel(opts.SourceChannel)
+	builds, err := repo.loadChannel(opts.Args.SourceChannel)
 	if err != nil {
-		log.Fatalf("Failed to load build data from channel '%s'", opts.SourceChannel)
+		log.Fatalf("Failed to load build data from channel '%s'", opts.Args.SourceChannel)
 	}
 
 	// skip this step if merely copying a channel over
-	if opts.Retag {
+	if opts.Args.Action == "retag" {
 		retaggingStep(builds[0].Images, &opts, tagTimestamp)
 	}
 

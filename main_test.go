@@ -61,14 +61,15 @@ func TestRenamedImages(t *testing.T) {
 	ioutil.WriteFile(srcJSONPath, []byte(testOldJSON), 0644)
 
 	opts := taggerOptions{
-		Commit:        false,
-		Build:         0,
-		SourceChannel: "source",
-		TargetChannel: "tgt",
-		URL:           "",
-		Codename:      "",
-		Copy:          false,
-		Retag:         true,
+		Commit:   false,
+		Build:    0,
+		URL:      "",
+		Codename: "",
+		Args: taggerOptionsArgs{
+			Action:        "retag",
+			SourceChannel: "source",
+			TargetChannel: "tgt",
+		},
 	}
 	tagTimestamp := "tag-timestamp #124124"
 	isoTimestamp := "wtf_timestamp %3215123"
@@ -132,14 +133,15 @@ func TestRenamedImages2(t *testing.T) {
 	ioutil.WriteFile(srcJSONPath, []byte(testOldJSON), 0644)
 
 	opts := taggerOptions{
-		Commit:        false,
-		Build:         9875,
-		SourceChannel: "source",
-		TargetChannel: "tgt",
-		URL:           "https://www.example.com/",
-		Codename:      "Zeitgeist",
-		Copy:          false,
-		Retag:         true,
+		Commit:   false,
+		Build:    9875,
+		URL:      "https://www.example.com/",
+		Codename: "Zeitgeist",
+		Args: taggerOptionsArgs{
+			SourceChannel: "source",
+			TargetChannel: "tgt",
+			Action:        "retag",
+		},
 	}
 	tagTimestamp := "tag-timestamp #124124"
 	isoTimestamp := "wtf_timestamp %3215123"
@@ -204,14 +206,15 @@ func TestRenamedImages3(t *testing.T) {
 	ioutil.WriteFile(srcJSONPath, []byte(testOldJSON), 0644)
 
 	opts := taggerOptions{
-		Commit:        false,
-		Build:         0,
-		SourceChannel: "source",
-		TargetChannel: "tgt",
-		URL:           "",
-		Codename:      "",
-		Copy:          true,
-		Retag:         false,
+		Commit:   false,
+		Build:    0,
+		URL:      "",
+		Codename: "",
+		Args: taggerOptionsArgs{
+			Action:        "copy",
+			SourceChannel: "source",
+			TargetChannel: "tgt",
+		},
 	}
 	tagTimestamp := "tag-timestamp #124124"
 	isoTimestamp := "wtf_timestamp %3215123"
@@ -286,14 +289,15 @@ func TestRenamedImagesBuildIncrement(t *testing.T) {
 	ioutil.WriteFile(tgtJSONPath, []byte(oldJSON1), 0644)
 
 	opts := taggerOptions{
-		Commit:        false,
-		Build:         0,
-		SourceChannel: "source",
-		TargetChannel: "tgt",
-		URL:           "https://www.example.com/",
-		Codename:      "Zeitgeist",
-		Copy:          false,
-		Retag:         true,
+		Commit:   false,
+		Build:    0,
+		URL:      "https://www.example.com/",
+		Codename: "Zeitgeist",
+		Args: taggerOptionsArgs{
+			SourceChannel: "source",
+			TargetChannel: "tgt",
+			Action:        "retag",
+		},
 	}
 	tagTimestamp := "tag-timestamp #124124"
 	isoTimestamp := "wtf_timestamp %3215123"
