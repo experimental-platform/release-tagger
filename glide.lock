@@ -1,18 +1,20 @@
-hash: b154d13356683fc89109beb6a819e7eee41895c59f61ea02f882b68a03f505a4
-updated: 2016-10-13T11:23:53.125204887+02:00
+hash: f99c10986a839e06381e484dd692d7ea848770d6bc77746352386460c2d3d898
+updated: 2016-12-06T11:50:11.210836894+01:00
 imports:
 - name: github.com/jessevdk/go-flags
-  version: 37c8226983775d404b6edfebd44be1078bd0fe95
+  version: 8bc97d602c3bfeb5fc6fc9b5a9c898f245495637
 - name: gopkg.in/libgit2/git2go.v24
   version: 8eaae73f85dd3df78df80d2dac066eb0866444ae
 testImports:
-- name: github.com/stretchr/objx
-  version: cbeaeb16a013161a98496fad62933b1d21786672
-- name: github.com/stretchr/testify
-  version: 232e8563676cd15c3a36ba5e675ad4312ac4cb11
+- name: github.com/davecgh/go-spew
+  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
   subpackages:
-  - assert
-  - http
-  - mock
+  - spew
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib
 - name: gopkg.in/stretchr/testify.v1
   version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  subpackages:
+  - assert
