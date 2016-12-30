@@ -66,7 +66,7 @@ func TestRenamedImages(t *testing.T) {
 		URL:      "",
 		Codename: "",
 		Args: taggerOptionsArgs{
-			Action:        "retag",
+			Action:        "create",
 			SourceChannel: "source",
 			TargetChannel: "tgt",
 		},
@@ -140,7 +140,7 @@ func TestRenamedImages2(t *testing.T) {
 		Args: taggerOptionsArgs{
 			SourceChannel: "source",
 			TargetChannel: "tgt",
-			Action:        "retag",
+			Action:        "create",
 		},
 	}
 	tagTimestamp := "tag-timestamp #124124"
@@ -296,7 +296,7 @@ func TestRenamedImagesBuildIncrement(t *testing.T) {
 		Args: taggerOptionsArgs{
 			SourceChannel: "source",
 			TargetChannel: "tgt",
-			Action:        "retag",
+			Action:        "create",
 		},
 	}
 	tagTimestamp := "tag-timestamp #124124"

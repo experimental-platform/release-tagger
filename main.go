@@ -27,11 +27,11 @@ func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp
 	switch opts.Args.Action {
 	case "copy":
 		break
-	case "retag":
+	case "create":
 		Retag = true
 		break
 	default:
-		fmt.Fprintf(os.Stderr, "The only allowed actions are 'copy' and 'retag'\n")
+		fmt.Fprintf(os.Stderr, "The only allowed actions are 'copy' and 'create'\n")
 		os.Exit(1)
 		break
 	}
@@ -98,9 +98,9 @@ func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp
 }
 
 type taggerOptionsArgs struct {
-	Action        string `description:"either 'copy' or 'retag'"`
-	SourceChannel string `description:"Release channel to be retagging/copying from."`
-	TargetChannel string `description:"Release channel to be retagging to."`
+	Action        string `description:"either 'copy' or 'create'"`
+	SourceChannel string `description:"Release channel to be creating/copying from."`
+	TargetChannel string `description:"Release channel to be creating/copying to."`
 }
 
 type taggerOptions struct {
@@ -123,7 +123,7 @@ func retaggingStep(images map[string]string, opts *taggerOptions, tagTimestamp s
 		}
 
 	} else {
-		log.Printf("Dry run. Would otherwise retag following images from '%s' to '%s' and update channel '%s':\n", opts.Args.SourceChannel, tagTimestamp, opts.Args.TargetChannel)
+		log.Printf("Dry run. Would otherwise create following tags from '%s' to '%s' and update channel '%s':\n", opts.Args.SourceChannel, tagTimestamp, opts.Args.TargetChannel)
 		for k := range images {
 			log.Printf(" * %s\n", k)
 		}
@@ -166,7 +166,7 @@ func main() {
 	}
 
 	// skip this step if merely copying a channel over
-	if opts.Args.Action == "retag" {
+	if opts.Args.Action == "create" {
 		retaggingStep(builds[0].Images, &opts, tagTimestamp)
 	}
 
