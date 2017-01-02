@@ -16,7 +16,10 @@ install:
     wget https://launchpad.net/ubuntu/+archive/primary/+files/libgit2-dev_0.24.1-2_amd64.deb
     sudo dpkg -i libgit2-24_0.24.1-2_amd64.deb libgit2-dev_0.24.1-2_amd64.deb
   fi
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew update && brew install libgit2;
+- |
+  if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+    brew update
+    brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/f98b7c21000191830f338390be7fe7ebe055b192/Formula/libgit2.rb
   fi
 - eval "$(ssh-agent -s)"
 - openssl aes-256-cbc -K $encrypted_3d6742f56703_key -iv $encrypted_3d6742f56703_iv
