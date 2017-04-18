@@ -53,7 +53,7 @@ var testOldJSON = `[
 // TestRenamedImages tests whether the image list
 // contains the same images with altered tags
 func TestRenamedImages(t *testing.T) {
-	repo, err := prepareRepo()
+	repo, err := prepareRepo("", "", "")
 	assert.Nil(t, err)
 	defer repo.Close()
 
@@ -125,7 +125,7 @@ func TestRenamedImages(t *testing.T) {
 
 // TestRenamedImages2 tests whether the Codename and URL have been updated
 func TestRenamedImages2(t *testing.T) {
-	repo, err := prepareRepo()
+	repo, err := prepareRepo("", "", "")
 	assert.Nil(t, err)
 	defer repo.Close()
 
@@ -198,7 +198,7 @@ func TestRenamedImages2(t *testing.T) {
 // TestRenamedImages3 tests whether the image list
 // contains the same images with unchanged tags
 func TestRenamedImages3(t *testing.T) {
-	repo, err := prepareRepo()
+	repo, err := prepareRepo("", "", "")
 	assert.Nil(t, err)
 	defer repo.Close()
 
@@ -269,7 +269,7 @@ func TestRenamedImages3(t *testing.T) {
 }
 
 func TestRenamedImagesBuildIncrement(t *testing.T) {
-	repo, err := prepareRepo()
+	repo, err := prepareRepo("", "", "")
 	assert.Nil(t, err)
 	defer repo.Close()
 

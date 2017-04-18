@@ -32,6 +32,13 @@ func credentialsCallback(url string, username string, allowedTypes git.CredType)
 	return git.ErrorCode(ret), &cred
 }
 
+func credentialsCallbackRawKey(publicKeyPath, privateKeyPath, passphrase string) git.CredentialsCallback {
+	return func(url string, username string, allowedTypes git.CredType) (git.ErrorCode, *git.Cred) {
+		ret, cred := git.NewCredSshKey(username, publicKeyPath, privateKeyPath, passphrase)
+		return git.ErrorCode(ret), &cred
+	}
+}
+
 func certificateCheckCallback(cert *git.Certificate, valid bool, hostname string) git.ErrorCode {
 	// https://help.github.com/articles/what-are-github-s-ssh-key-fingerprints/
 	gitHubRSAFingerprint := []byte{0x16, 0x27, 0xac, 0xa5, 0x76, 0x28, 0x2d, 0x36, 0x63, 0x1b, 0x56, 0x4d, 0xeb, 0xdf, 0xa6, 0x48}
@@ -53,7 +60,7 @@ func certificateCheckCallback(cert *git.Certificate, valid bool, hostname string
 	return 0
 }
 
-func prepareRepo() (*buildsRepo, error) {
+func prepareRepo(privateKeyPath, pubkeyPath, passphrase string) (*buildsRepo, error) {
 	dir, err := ioutil.TempDir("", "tagger")
 	if err != nil {
 		return nil, err
@@ -62,6 +69,9 @@ func prepareRepo() (*buildsRepo, error) {
 	RemoteCallbacks := git.RemoteCallbacks{
 		CertificateCheckCallback: certificateCheckCallback,
 		CredentialsCallback:      credentialsCallback,
+	}
+	if privateKeyPath != "" && pubkeyPath != "" {
+		RemoteCallbacks.CredentialsCallback = credentialsCallbackRawKey(pubkeyPath, privateKeyPath, passphrase)
 	}
 	fetchOptions := &git.FetchOptions{RemoteCallbacks: RemoteCallbacks}
 	cloneOptions := &git.CloneOptions{
