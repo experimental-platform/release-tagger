@@ -1,4 +1,4 @@
-package main
+package git
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ import (
 	"gopkg.in/libgit2/git2go.v24"
 )
 
-type buildsDatum struct {
+type BuildsDatum struct {
 	Build       int32             `json:"build"`
 	Codename    string            `json:"codename"`
 	URL         string            `json:"url"`
@@ -20,9 +20,9 @@ type buildsDatum struct {
 	Images      map[string]string `json:"images"`
 }
 
-type buildsData []buildsDatum
+type BuildsData []BuildsDatum
 
-type buildsRepo struct {
+type BuildsRepo struct {
 	directory string
 	repo      *git.Repository
 }
@@ -53,7 +53,7 @@ func certificateCheckCallback(cert *git.Certificate, valid bool, hostname string
 	return 0
 }
 
-func prepareRepo() (*buildsRepo, error) {
+func PrepareRepo() (*BuildsRepo, error) {
 	dir, err := ioutil.TempDir("", "tagger")
 	if err != nil {
 		return nil, err
@@ -76,10 +76,10 @@ func prepareRepo() (*buildsRepo, error) {
 		return nil, err
 	}
 
-	return &buildsRepo{directory: dir, repo: repo}, nil
+	return &BuildsRepo{directory: dir, repo: repo}, nil
 }
 
-func (br *buildsRepo) Close() {
+func (br *BuildsRepo) Close() {
 	if br.repo != nil {
 		br.repo = nil
 	}
@@ -90,11 +90,11 @@ func (br *buildsRepo) Close() {
 	}
 }
 
-func (br *buildsRepo) GetDirectory() string {
+func (br *BuildsRepo) GetDirectory() string {
 	return br.directory
 }
 
-func (br *buildsRepo) addAndCommitChannel(channelName, commitMessage string) error {
+func (br *BuildsRepo) AddAndCommitChannel(channelName, commitMessage string) error {
 	idx, err := br.repo.Index()
 	if err != nil {
 		return err
@@ -144,7 +144,7 @@ func (br *buildsRepo) addAndCommitChannel(channelName, commitMessage string) err
 	return nil
 }
 
-func (br *buildsRepo) push() error {
+func (br *BuildsRepo) Push() error {
 	remote, err := br.repo.Remotes.Lookup("origin")
 	if err != nil {
 		return err
@@ -160,11 +160,11 @@ func (br *buildsRepo) push() error {
 	return err
 }
 
-func (br *buildsRepo) loadChannel(channelName string) (buildsData, error) {
+func (br *BuildsRepo) LoadChannel(channelName string) (BuildsData, error) {
 	fileName := fmt.Sprintf("%s.json", channelName)
 	filePath := path.Join(br.directory, fileName)
 
-	var builds buildsData
+	var builds BuildsData
 
 	rawData, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -179,7 +179,7 @@ func (br *buildsRepo) loadChannel(channelName string) (buildsData, error) {
 	return builds, nil
 }
 
-func (br *buildsRepo) saveChannel(channelName string, data buildsData) error {
+func (br *BuildsRepo) SaveChannel(channelName string, data BuildsData) error {
 	fileName := fmt.Sprintf("%s.json", channelName)
 	filePath := path.Join(br.directory, fileName)
 
@@ -196,7 +196,7 @@ func (br *buildsRepo) saveChannel(channelName string, data buildsData) error {
 	return nil
 }
 
-func (br *buildsRepo) dumpChannel(channelName string) (string, error) {
+func (br *BuildsRepo) DumpChannel(channelName string) (string, error) {
 	fileName := fmt.Sprintf("%s.json", channelName)
 	filePath := path.Join(br.directory, fileName)
 

@@ -1,4 +1,4 @@
-package main
+package git
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 )
 
 func TestPrepareRepo(t *testing.T) {
-	repo, err := prepareRepo()
+	repo, err := PrepareRepo()
 	assert.Nil(t, err)
 	defer repo.Close()
 
@@ -30,7 +30,7 @@ func TestPrepareRepo(t *testing.T) {
 }
 
 func TestAddAndCommit(t *testing.T) {
-	repo, err := prepareRepo()
+	repo, err := PrepareRepo()
 	assert.Nil(t, err)
 	defer repo.Close()
 
@@ -48,7 +48,7 @@ func TestAddAndCommit(t *testing.T) {
 
 	ioutil.WriteFile(filePath, []byte(randomData), 0644)
 
-	err = repo.addAndCommitChannel(randomData, "foobar commit")
+	err = repo.AddAndCommitChannel(randomData, "foobar commit")
 
 	cmd2 := exec.Command("git", "-C", dir, "show-ref", "refs/heads/master")
 	out2, err := cmd2.CombinedOutput()

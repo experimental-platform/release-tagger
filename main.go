@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/experimental-platform/release-tagger/git"
 	"github.com/jessevdk/go-flags"
 )
 
@@ -19,7 +20,7 @@ func checkIfTokensPresent() {
 	}
 }
 
-func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp string) error {
+func updateJSON(repo *git.BuildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp string) error {
 	var (
 		Retag bool
 	)
@@ -36,17 +37,17 @@ func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp
 		break
 	}
 
-	oldBuilds, err := repo.loadChannel(opts.Args.SourceChannel)
+	oldBuilds, err := repo.LoadChannel(opts.Args.SourceChannel)
 	if err != nil {
 		return err
 	}
 
-	newBuilds := []buildsDatum{oldBuilds[0]}
+	newBuilds := []git.BuildsDatum{oldBuilds[0]}
 	if opts.Build != 0 {
 		// if build number was given on commandline then set to it
 		newBuilds[0].Build = opts.Build
 	} else {
-		destBuilds, err2 := repo.loadChannel(opts.Args.TargetChannel)
+		destBuilds, err2 := repo.LoadChannel(opts.Args.TargetChannel)
 		if err2 != nil {
 			// if targetchannel doesn't exist, set to #1
 			newBuilds[0].Build = 1
@@ -72,25 +73,25 @@ func updateJSON(repo *buildsRepo, opts taggerOptions, tagTimestamp, isoTimestamp
 	log.Printf("Old build version: %d", oldBuilds[0].Build)
 	log.Printf("New build version: %d", newBuilds[0].Build)
 
-	err = repo.saveChannel(opts.Args.TargetChannel, newBuilds)
+	err = repo.SaveChannel(opts.Args.TargetChannel, newBuilds)
 	if err != nil {
 		return fmt.Errorf("Failed to save channel json: %s", err.Error())
 	}
 
 	if opts.Commit == true {
 		commitMessage := fmt.Sprintf("release on channel '%s' at %s", opts.Args.TargetChannel, isoTimestamp)
-		err := repo.addAndCommitChannel(opts.Args.TargetChannel, commitMessage)
+		err := repo.AddAndCommitChannel(opts.Args.TargetChannel, commitMessage)
 		if err != nil {
 			return err
 		}
 
-		err = repo.push()
+		err = repo.Push()
 		if err != nil {
 			return err
 		}
 		log.Println("Push successful")
 	} else {
-		dump, _ := repo.dumpChannel(opts.Args.TargetChannel)
+		dump, _ := repo.DumpChannel(opts.Args.TargetChannel)
 		log.Printf("New JSON:\n%s\n", dump)
 	}
 
@@ -154,13 +155,13 @@ func main() {
 	fmt.Printf("Tag timestamp: %s\n", tagTimestamp)
 	fmt.Printf("ISO timestamp: %s\n", isoTimestamp)
 
-	repo, err := prepareRepo()
+	repo, err := git.PrepareRepo()
 	if err != nil {
 		log.Fatalf("Failed to clone the builds repo: %s", err.Error())
 	}
 	defer repo.Close()
 
-	builds, err := repo.loadChannel(opts.Args.SourceChannel)
+	builds, err := repo.LoadChannel(opts.Args.SourceChannel)
 	if err != nil {
 		log.Fatalf("Failed to load build data from channel '%s'", opts.Args.SourceChannel)
 	}
