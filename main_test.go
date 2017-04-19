@@ -5,6 +5,8 @@ import (
 	"path"
 	"testing"
 
+	"github.com/experimental-platform/release-tagger/git"
+
 	"gopkg.in/stretchr/testify.v1/assert"
 )
 
@@ -53,7 +55,7 @@ var testOldJSON = `[
 // TestRenamedImages tests whether the image list
 // contains the same images with altered tags
 func TestRenamedImages(t *testing.T) {
-	repo, err := prepareRepo()
+	repo, err := git.PrepareRepo()
 	assert.Nil(t, err)
 	defer repo.Close()
 
@@ -118,14 +120,14 @@ func TestRenamedImages(t *testing.T) {
   }
 ]`
 
-	actualJSON, err := repo.dumpChannel("tgt")
+	actualJSON, err := repo.DumpChannel("tgt")
 	assert.Nil(t, err)
 	assert.Equal(t, expectedJSON, actualJSON)
 }
 
 // TestRenamedImages2 tests whether the Codename and URL have been updated
 func TestRenamedImages2(t *testing.T) {
-	repo, err := prepareRepo()
+	repo, err := git.PrepareRepo()
 	assert.Nil(t, err)
 	defer repo.Close()
 
@@ -190,7 +192,7 @@ func TestRenamedImages2(t *testing.T) {
   }
 ]`
 
-	actualJSON, err := repo.dumpChannel("tgt")
+	actualJSON, err := repo.DumpChannel("tgt")
 	assert.Nil(t, err)
 	assert.Equal(t, expectedJSON, actualJSON)
 }
@@ -198,7 +200,7 @@ func TestRenamedImages2(t *testing.T) {
 // TestRenamedImages3 tests whether the image list
 // contains the same images with unchanged tags
 func TestRenamedImages3(t *testing.T) {
-	repo, err := prepareRepo()
+	repo, err := git.PrepareRepo()
 	assert.Nil(t, err)
 	defer repo.Close()
 
@@ -263,13 +265,13 @@ func TestRenamedImages3(t *testing.T) {
   }
 ]`
 
-	actualJSON, err := repo.dumpChannel("tgt")
+	actualJSON, err := repo.DumpChannel("tgt")
 	assert.Nil(t, err)
 	assert.Equal(t, expectedJSON, actualJSON)
 }
 
 func TestRenamedImagesBuildIncrement(t *testing.T) {
-	repo, err := prepareRepo()
+	repo, err := git.PrepareRepo()
 	assert.Nil(t, err)
 	defer repo.Close()
 
@@ -314,7 +316,7 @@ func TestRenamedImagesBuildIncrement(t *testing.T) {
   }
 ]`
 
-	actualJSON, err := repo.dumpChannel("tgt")
+	actualJSON, err := repo.DumpChannel("tgt")
 	assert.Nil(t, err)
 	assert.Equal(t, expectedJSON, actualJSON)
 }
