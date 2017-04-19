@@ -106,13 +106,10 @@ type taggerOptionsArgs struct {
 type taggerOptions struct {
 	Args taggerOptionsArgs `positional-args:"true" required:"true"`
 
-	Commit        bool   `short:"c" long:"commit" description:"Commit the changes. Will make a dry run without this flag."`
-	Build         int32  `short:"b" long:"build" required:"false" default:"0" description:"Specify the build number to be placed inside the JSON."`
-	URL           string `short:"u" long:"url" description:"Release notes URL"`
-	Codename      string `short:"n" long:"codename" description:"Release codename"`
-	SSHPrivKey    string `long:"ssh-privkey" required:"false" default:""`
-	SSHPubKey     string `long:"ssh-pubkey" required:"false" default:""`
-	SSHPassphrase string `long:"ssh-passphrase" required:"false" default:""`
+	Commit   bool   `short:"c" long:"commit" description:"Commit the changes. Will make a dry run without this flag."`
+	Build    int32  `short:"b" long:"build" required:"false" default:"0" description:"Specify the build number to be placed inside the JSON."`
+	URL      string `short:"u" long:"url" description:"Release notes URL"`
+	Codename string `short:"n" long:"codename" description:"Release codename"`
 }
 
 func retaggingStep(images map[string]string, opts *taggerOptions, tagTimestamp string) {
@@ -157,7 +154,7 @@ func main() {
 	fmt.Printf("Tag timestamp: %s\n", tagTimestamp)
 	fmt.Printf("ISO timestamp: %s\n", isoTimestamp)
 
-	repo, err := prepareRepo(opts.SSHPrivKey, opts.SSHPubKey, opts.SSHPassphrase)
+	repo, err := prepareRepo()
 	if err != nil {
 		log.Fatalf("Failed to clone the builds repo: %s", err.Error())
 	}
