@@ -39,6 +39,8 @@ type libgitClient struct {
 	repo *git.Repository
 }
 
+var _ RepoClient = &libgitClient{}
+
 func newFromLibgit(dir string) (*libgitClient, error) {
 	RemoteCallbacks := git.RemoteCallbacks{
 		CertificateCheckCallback: certificateCheckCallback,
