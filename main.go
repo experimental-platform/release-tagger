@@ -107,10 +107,11 @@ type taggerOptionsArgs struct {
 type taggerOptions struct {
 	Args taggerOptionsArgs `positional-args:"true" required:"true"`
 
-	Commit   bool   `short:"c" long:"commit" description:"Commit the changes. Will make a dry run without this flag."`
-	Build    int32  `short:"b" long:"build" required:"false" default:"0" description:"Specify the build number to be placed inside the JSON."`
-	URL      string `short:"u" long:"url" description:"Release notes URL"`
-	Codename string `short:"n" long:"codename" description:"Release codename"`
+	Commit    bool   `short:"c" long:"commit" description:"Commit the changes. Will make a dry run without this flag."`
+	Build     int32  `short:"b" long:"build" required:"false" default:"0" description:"Specify the build number to be placed inside the JSON."`
+	URL       string `short:"u" long:"url" description:"Release notes URL"`
+	Codename  string `short:"n" long:"codename" description:"Release codename"`
+	GitClient string `long:"git-client" default:"libgit" description:"Git client. Either 'libgit' or 'command'"`
 }
 
 func retaggingStep(images map[string]string, opts *taggerOptions, tagTimestamp string) {
@@ -155,7 +156,7 @@ func main() {
 	fmt.Printf("Tag timestamp: %s\n", tagTimestamp)
 	fmt.Printf("ISO timestamp: %s\n", isoTimestamp)
 
-	repo, err := git.PrepareRepo()
+	repo, err := git.PrepareRepo(opts.GitClient)
 	if err != nil {
 		log.Fatalf("Failed to clone the builds repo: %s", err.Error())
 	}

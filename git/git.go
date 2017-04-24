@@ -29,15 +29,27 @@ type BuildsRepo struct {
 	client    RepoClient
 }
 
-func PrepareRepo() (*BuildsRepo, error) {
+func PrepareRepo(gitClient string) (*BuildsRepo, error) {
 	dir, err := ioutil.TempDir("", "tagger")
 	if err != nil {
 		return nil, err
 	}
 
-	c, err := newFromLibgit(dir)
-	if err != nil {
-		return nil, err
+	var c RepoClient
+
+	switch gitClient {
+	case "libgit":
+		c, err = newFromLibgit(dir)
+		if err != nil {
+			return nil, err
+		}
+	case "command":
+		c, err = newFromCommand(dir)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, fmt.Errorf("Unknown git client '%s'", gitClient)
 	}
 
 	return &BuildsRepo{directory: dir, client: c}, nil

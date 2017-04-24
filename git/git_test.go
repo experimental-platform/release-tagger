@@ -13,7 +13,7 @@ import (
 )
 
 func TestPrepareRepo(t *testing.T) {
-	repo, err := PrepareRepo()
+	repo, err := PrepareRepo("libgit")
 	assert.Nil(t, err)
 	defer repo.Close()
 
@@ -30,7 +30,7 @@ func TestPrepareRepo(t *testing.T) {
 }
 
 func TestAddAndCommit(t *testing.T) {
-	repo, err := PrepareRepo()
+	repo, err := PrepareRepo("libgit")
 	assert.Nil(t, err)
 	defer repo.Close()
 
